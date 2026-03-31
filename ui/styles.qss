@@ -1,0 +1,94 @@
+/* Catppuccin Mocha inspired Dark Theme Variables */
+QWidget {
+    background-color: #1E1E2E;
+    color: #CDD6F4;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    font-size: 14px;
+}
+
+QPushButton {
+    background-color: #89B4FA;
+    color: #11111B;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 16px;
+    font-weight: bold;
+}
+
+QPushButton:hover {
+    background-color: #B4BEFE;
+}
+
+QPushButton:pressed {
+    background-color: #74C7EC;
+}
+
+QPushButton:disabled {
+    background-color: #45475A;
+    color: #A6ADC8;
+}
+
+QLineEdit, QSpinBox, QDoubleSpinBox, QComboBox {
+    background-color: #313244;
+    border: 1px solid #45475A;
+    border-radius: 4px;
+    padding: 6px;
+    color: #CDD6F4;
+}
+
+QLineEdit:focus, QSpinBox:focus, QDoubleSpinBox:focus, QComboBox:focus {
+    border: 1px solid #89B4FA;
+}
+
+QTableWidget {
+    background-color: #181825;
+    alternate-background-color: #1E1E2E;
+    gridline-color: #45475A;
+    selection-background-color: #89B4FA;
+    selection-color: #11111B;
+    border: 1px solid #45475A;
+    border-radius: 4px;
+}
+
+QHeaderView::section {
+    background-color: #313244;
+    color: #CDD6F4;
+    padding: 8px;
+    border: none;
+    border-right: 1px solid #45475A;
+    border-bottom: 1px solid #45475A;
+    font-weight: bold;
+}
+
+/* Sidebar Styling */
+#Sidebar {
+    background-color: #11111B;
+}
+
+#Sidebar QPushButton {
+    background-color: transparent;
+    color: #A6ADC8;
+    text-align: left;
+    padding: 12px 20px;
+    border-radius: 0;
+    font-size: 16px;
+}
+
+#Sidebar QPushButton:hover {
+    background-color: #313244;
+    color: #CDD6F4;
+}
+
+#Sidebar QPushButton:checked {
+    background-color: #89B4FA;
+    color: #11111B;
+    font-weight: bold;
+    border-left: 4px solid #CBA6F7;
+}
+
+/* Cards */
+.Card {
+    background-color: #313244;
+    border-radius: 8px;
+    padding: 20px;
+}
