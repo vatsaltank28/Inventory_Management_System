@@ -8,7 +8,7 @@ class Item:
         self.supplier = supplier
 
     def __repr__(self):
-        return f"<Item {self.item_id}: {self.name} | Stock: {self.stock} | Price: ${self.price:.2f}>"
+        return f"<Item {self.item_id}: {self.name} | Stock: {self.stock} | Price: ₹{self.price:.2f}>"
 
     def update_stock(self, amount):
         """Update stock level. Positive for addition, negative for deduction."""

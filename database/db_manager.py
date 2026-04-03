@@ -1,10 +1,18 @@
 import sqlite3
+import hashlib
+
 
 DB_PATH = 'inventory.db'
 
 
 def get_connection():
     return sqlite3.connect(DB_PATH)
+
+
+# 🔒 PASSWORD HASHING
+def hash_password(password):
+    """Securely hash a password using SHA-256."""
+    return hashlib.sha256(password.encode()).hexdigest()
 
 
 # 🔥 AUTO SEED DATA
@@ -90,9 +98,10 @@ def init_db():
     # ✅ CREATE ADMIN USER
     cursor.execute("SELECT * FROM users WHERE username='admin'")
     if not cursor.fetchone():
+        hashed_admin_pass = hash_password('admin')
         cursor.execute(
             "INSERT INTO users (username, password, role) VALUES (?, ?, ?)",
-            ('admin', 'admin', 'admin')
+            ('admin', hashed_admin_pass, 'admin')
         )
 
     # 🔥 IMPORTANT CALLS
@@ -105,6 +114,10 @@ def init_db():
 
 # 👤 REGISTER USER
 def register_user(username, password):
+    """
+    Registers a new user. All new users default to the 'user' role.
+    Role elevation must be done subsequently via an existing admin.
+    """
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -113,14 +126,54 @@ def register_user(username, password):
         conn.close()
         return False, "Username already exists."
 
+    hashed_pass = hash_password(password)
     cursor.execute(
         "INSERT INTO users (username, password, role) VALUES (?, ?, 'user')",
-        (username, password)
+        (username, hashed_pass)
     )
 
     conn.commit()
     conn.close()
-    return True, "Registration successful."
+    return True, f"Successfully created user: {username}."
+# ⬆️ PROMOTE USER TO ADMIN
+def promote_to_admin(target_username, admin_username, admin_password):
+    """
+    Promote an existing user to admin. Requires current admin credentials.
+    """
+    # 1. Verify admin credentials
+    creator = authenticate_user(admin_username, admin_password)
+    if not creator or creator[3] != 'admin':
+        return False, "Unauthorized: Invalid admin credentials."
+        
+    # Prevent self-modification
+    if target_username == admin_username:
+        return False, "Cannot modify your own role."
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # 2. Verify target user exists and isn't already admin
+    cursor.execute("SELECT role FROM users WHERE username=?", (target_username,))
+    target_user = cursor.fetchone()
+    
+    if not target_user:
+        conn.close()
+        return False, f"User '{target_username}' does not exist."
+        
+    if target_user[0] == 'admin':
+        conn.close()
+        return False, f"User '{target_username}' is already an admin."
+
+    # 3. Promote user
+    cursor.execute(
+        "UPDATE users SET role = 'admin' WHERE username=?",
+        (target_username,)
+    )
+    # Optional: Log the promotion action here to an audit table
+    
+    conn.commit()
+    conn.close()
+    return True, f"Success: {target_username} is now an admin."
 
 
 # 🔐 LOGIN
@@ -129,13 +182,28 @@ def authenticate_user(username, password):
     cursor = conn.cursor()
 
     cursor.execute(
-        "SELECT * FROM users WHERE username=? AND password=?",
-        (username, password)
+        "SELECT id, username, password, role FROM users WHERE username=?",
+        (username,)
     )
 
     user = cursor.fetchone()
     conn.close()
-    return user
+
+    if user:
+        db_id, db_user, db_pass, db_role = user
+        hashed_input = hash_password(password)
+
+        # 1. Check if it matches the current hash
+        if db_pass == hashed_input:
+            return user
+        
+        # 2. Backward compatibility: check if it matches plain text
+        if db_pass == password:
+            # Upgrade this user to hashed password now
+            execute_query("UPDATE users SET password=? WHERE id=?", (hashed_input, db_id))
+            return user
+
+    return None
 
 
 # 👥 GET USERS

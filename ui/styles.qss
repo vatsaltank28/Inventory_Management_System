@@ -43,10 +43,20 @@ QLineEdit:focus, QSpinBox:focus, QDoubleSpinBox:focus, QComboBox:focus {
 QTableWidget {
     background-color: #181825;
     alternate-background-color: #1E1E2E;
-    gridline-color: #45475A;
-    selection-background-color: #89B4FA;
-    selection-color: #11111B;
-    border: 1px solid #45475A;
+    border: 1px solid #313244;
+    border-radius: 12px;
+    padding: 8px;
+}
+QTableWidget::item {
+    border-bottom: 1px solid #313244;
+    padding: 10px;
+}
+QTableWidget::item:hover {
+    background-color: #313244;
+}
+QTableWidget::item:selected {
+    background-color: #45475A;
+    color: #CDD6F4;
     border-radius: 4px;
 }
 
@@ -88,7 +98,69 @@ QHeaderView::section {
 
 /* Cards */
 .Card {
-    background-color: #313244;
-    border-radius: 8px;
-    padding: 20px;
+    background-color: #24243A;
+    border: 1px solid #313244;
+    border-radius: 16px;
+    padding: 28px;
+}
+.Card:hover {
+    border: 1px solid #89B4FA;
+    background-color: #2A2A42;
+}
+
+#StatTitle {
+    color: #A6ADC8;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+#StatValue {
+    color: #89B4FA;
+    font-size: 36px;
+    font-weight: 800;
+}
+
+#StatValue[Alert="true"] {
+    color: #F38BA8;
+}
+
+#DashboardTitle {
+    font-size: 28px;
+    font-weight: 800;
+    margin-bottom: 30px;
+    color: #CDD6F4;
+}
+
+/* --- ACTION BUTTONS --- */
+#PromoteBtn {
+    background-color: rgba(137, 180, 250, 0.15);
+    color: #89B4FA;
+    border: 1px solid #89B4FA;
+    border-radius: 6px;
+    padding: 6px 12px;
+}
+#PromoteBtn:hover {
+    background-color: rgba(137, 180, 250, 0.4);
+    border: 1px solid #B4BEFE;
+}
+#PromoteBtn:pressed {
+    background-color: #89B4FA;
+    color: #11111B;
+}
+
+#BanBtn {
+    background-color: rgba(243, 139, 168, 0.15);
+    color: #F38BA8;
+    border: 1px solid #F38BA8;
+    border-radius: 6px;
+    padding: 6px 12px;
+}
+#BanBtn:hover {
+    background-color: rgba(243, 139, 168, 0.4);
+    border: 1px solid #F5C2E7;
+}
+#BanBtn:pressed {
+    background-color: #F38BA8;
+    color: #11111B;
 }

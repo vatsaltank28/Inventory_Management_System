@@ -14,6 +14,6 @@ def export_to_csv(items, filename=None):
         writer.writerow(["ID", "Name", "Stock", "Price", "Category", "Supplier"])
         
         for item in items:
-            writer.writerow([item.item_id, item.name, item.stock, f"${item.price:.2f}", item.category, item.supplier])
+            writer.writerow([item.item_id, item.name, item.stock, f"₹{item.price:.2f}", item.category, item.supplier])
             
     return filepath

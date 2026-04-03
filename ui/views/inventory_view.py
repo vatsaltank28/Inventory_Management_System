@@ -4,6 +4,7 @@ from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
 from PyQt6.QtCore import Qt
 from ui.views.item_form import ItemFormWindow
 from data_structures.algorithms import binary_search, quick_sort
+from PyQt6.QtWidgets import QInputDialog
 
 class InventoryView(QWidget):
     def __init__(self, manager):
@@ -23,11 +24,16 @@ class InventoryView(QWidget):
         top_bar.addWidget(self.search_input)
         
         self.sort_combo = QComboBox()
-        self.sort_combo.addItems(["Sort: ID (Default)", "Sort: Price (QuickSort)", "Sort: Stock"])
+        self.sort_combo.addItems([
+            "Sort: ID (Default)", 
+            "Sort: Price (QuickSort)", 
+            "Sort: Stock",
+            "Filter: Low Stock Alerts"
+        ])
         self.sort_combo.currentIndexChanged.connect(self.handle_sort)
         top_bar.addWidget(self.sort_combo)
         
-        self.btn_add = QPushButton("➕ Add Item")
+        self.btn_add = QPushButton("➕ Create New Item (Initial Stock Only)")
         self.btn_add.clicked.connect(self.open_add_form)
         
         self.btn_undo = QPushButton("↩️ Undo Stack")
@@ -51,10 +57,29 @@ class InventoryView(QWidget):
             headers.append("Actions")
             
         self.table.setHorizontalHeaderLabels(headers)
-        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        
+        header = self.table.horizontalHeader()
+        header.setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents) # ID
+        header.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)          # Name
+        header.setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents) # Stock
+        header.setSectionResizeMode(3, QHeaderView.ResizeMode.ResizeToContents) # Price
+        header.setSectionResizeMode(4, QHeaderView.ResizeMode.ResizeToContents) # Category
+        header.setSectionResizeMode(5, QHeaderView.ResizeMode.ResizeToContents) # Supplier
+        if self.is_admin:
+            header.setSectionResizeMode(6, QHeaderView.ResizeMode.Fixed)        # Actions
+            self.table.setColumnWidth(6, 420) # Increased to match user scale constraint
+            
         self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        self.table.verticalHeader().setDefaultSectionSize(50)
         
         layout.addWidget(self.table)
+        
+        # Legend for Action Buttons (so we don't need huge button texts)
+        if self.is_admin:
+            legend = QLabel("🟢 <b>Green</b>: Quick Restock (+ Stock)   |   🔵 <b>Blue</b>: Edit Details   |   🔴 <b>Red</b>: Delete Item")
+            legend.setStyleSheet("color: #BAC2DE; font-size: 12px; margin-top: 5px;")
+            legend.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            layout.addWidget(legend)
         
     def refresh(self):
         self.handle_sort()
@@ -73,7 +98,7 @@ class InventoryView(QWidget):
                 stock_item.setForeground(Qt.GlobalColor.red)
                 
             self.table.setItem(row, 2, stock_item)
-            self.table.setItem(row, 3, QTableWidgetItem(f"${item.price:.2f}"))
+            self.table.setItem(row, 3, QTableWidgetItem(f"₹{item.price:.2f}"))
             self.table.setItem(row, 4, QTableWidgetItem(item.category))
             self.table.setItem(row, 5, QTableWidgetItem(item.supplier))
             
@@ -83,13 +108,18 @@ class InventoryView(QWidget):
                 actions_layout = QHBoxLayout(actions_widget)
                 actions_layout.setContentsMargins(5,2,5,2)
                 
-                btn_edit = QPushButton("✏️")
+                btn_restock = QPushButton("📦 Restock")
+                btn_restock.setStyleSheet("background-color: #A6E3A1; color: #11111B;")
+                btn_restock.clicked.connect(lambda checked, i_id=item.item_id: self.quick_restock(i_id))
+                
+                btn_edit = QPushButton("✏️ Edit")
                 btn_edit.clicked.connect(lambda checked, i=item: self.open_edit_form(i))
                 
-                btn_delete = QPushButton("❌")
+                btn_delete = QPushButton("❌ Delete")
                 btn_delete.setStyleSheet("background-color: #F38BA8; color: #11111B;")
                 btn_delete.clicked.connect(lambda checked, i_id=item.item_id: self.delete_item(i_id))
                 
+                actions_layout.addWidget(btn_restock)
                 actions_layout.addWidget(btn_edit)
                 actions_layout.addWidget(btn_delete)
                 self.table.setCellWidget(row, 6, actions_widget)
@@ -129,8 +159,10 @@ class InventoryView(QWidget):
             sorted_items = quick_sort(items, key_func=lambda x: x.item_id)
         elif idx == 1:
             sorted_items = quick_sort(items, key_func=lambda x: x.price)
-        else:
+        elif idx == 2:
             sorted_items = quick_sort(items, key_func=lambda x: x.stock)
+        elif idx == 3: # Low Stock Filter
+            sorted_items = [i for i in items if i.stock <= 10]
             
         self.load_table_data(sorted_items)
 
@@ -141,6 +173,14 @@ class InventoryView(QWidget):
     def open_edit_form(self, item):
         self.form = ItemFormWindow(self.manager, self, item)
         self.form.show()
+        
+    def quick_restock(self, item_id):
+        amount, ok = QInputDialog.getInt(self, "Quick Restock", "Units to log (Order IN):", 10, 1, 10000)
+        if ok and amount > 0:
+            self.manager.queue_order(item_id, amount, 'IN')
+            self.manager.process_order_queue()
+            self.refresh()
+            QMessageBox.information(self, "Success", f"Restock processed. Stock increased by {amount}.")
 
     def delete_item(self, item_id):
         reply = QMessageBox.question(self, 'Confirm Delete', 'Are you sure you want to delete this item? This action is pushed to the Undo Stack.',

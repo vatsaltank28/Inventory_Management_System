@@ -32,7 +32,7 @@ class ItemFormWindow(QWidget):
         layout.addWidget(self.sup_in)
         
         # Price
-        layout.addWidget(QLabel("Price ($):"))
+        layout.addWidget(QLabel("Price (₹):"))
         self.price_in = QDoubleSpinBox()
         self.price_in.setMaximum(999999.99)
         layout.addWidget(self.price_in)

@@ -66,6 +66,7 @@ class LoginWindow(QWidget):
         super().__init__()
         self.setWindowTitle("Inventory System - Login")
         self.setFixedSize(400, 350)
+        self.admin_failed_attempts = {}
         
         layout = QVBoxLayout()
         layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -101,14 +102,27 @@ class LoginWindow(QWidget):
         user = self.username_input.text().strip()
         pwd = self.password_input.text().strip()
         
+        # Check if user is locked
+        if self.admin_failed_attempts.get(user, 0) >= 3:
+            QMessageBox.critical(self, "Security Lock", "Account temporarily locked due to 3 failed admin login attempts.")
+            return
+        
         # Check against database natively 
         auth_user = db_manager.authenticate_user(user, pwd)
         if auth_user:
+            self.admin_failed_attempts[user] = 0 # Reset on success
             self.main_window = MainWindow(auth_user)
             self.main_window.show()
             self.close()
         else:
-            QMessageBox.warning(self, "Error", "Invalid credentials. Please try again or register.")
+            # Check if attempting admin login
+            user_record = db_manager.execute_query("SELECT role FROM users WHERE username=?", (user,), fetch=True)
+            if user_record and user_record[0][0] == 'admin':
+                self.admin_failed_attempts[user] = self.admin_failed_attempts.get(user, 0) + 1
+                attempts_left = 3 - self.admin_failed_attempts[user]
+                QMessageBox.warning(self, "Auth Failed", f"Invalid admin credentials. {attempts_left} attempts remaining.")
+            else:
+                QMessageBox.warning(self, "Error", "Invalid credentials. Please try again or register.")
             
     def open_register(self):
         self.reg_window = RegisterWindow(self)

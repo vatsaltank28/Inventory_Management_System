@@ -59,7 +59,7 @@ class ReportsView(QWidget):
         for item in sorted_items:
             row = self.bst_table.rowCount()
             self.bst_table.insertRow(row)
-            self.bst_table.setItem(row, 0, QTableWidgetItem(f"${item.price:.2f}"))
+            self.bst_table.setItem(row, 0, QTableWidgetItem(f"₹{item.price:.2f}"))
             self.bst_table.setItem(row, 1, QTableWidgetItem(str(item.item_id)))
             self.bst_table.setItem(row, 2, QTableWidgetItem(item.name))
 

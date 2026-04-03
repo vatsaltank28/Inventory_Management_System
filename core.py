@@ -83,24 +83,45 @@ class InventoryManager:
     def update_item(self, item_id, name, stock, price, category, supplier):
         if item_id in self.inventory_dict:
             old_item = self.inventory_dict[item_id]
+
+            # Save for undo
             old_state = Item(old_item.item_id, old_item.name, old_item.stock, old_item.price, old_item.category, old_item.supplier)
             self.undo_stack.push({'action': 'update', 'item': old_state})
-            
+
+            # Update DB
             db_manager.execute_query(
                 "UPDATE items SET name=?, stock=?, price=?, category=?, supplier=? WHERE id=?",
                 (name, stock, price, category, supplier, item_id), fetch=False
             )
-            self.load_data()
+
+            # Create updated item object
+            updated_item = Item(item_id, name, stock, price, category, supplier)
+
+            # Update in-memory structures for performance
+            self.inventory_dict[item_id] = updated_item
+            # Rebuild BST to ensure it stays valid with new prices
+            self.price_bst = BinarySearchTree()
+            for itm in self.inventory_dict.values():
+                self.price_bst.insert(itm.price, itm)
+            
+            self.supplier_graph.add_item_to_supplier(supplier, item_id)
+
             return True
         return False
 
     def delete_item(self, item_id):
         if item_id in self.inventory_dict:
             item = self.inventory_dict[item_id]
+
             self.undo_stack.push({'action': 'delete', 'item': item})
-            
+
             db_manager.execute_query("DELETE FROM items WHERE id=?", (item_id,), fetch=False)
-            self.load_data()
+
+            # Remove from structures
+            del self.inventory_dict[item_id]
+            # Reload to properly clear structures
+            self.load_data() 
+
             return True
         return False
         
@@ -125,7 +146,7 @@ class InventoryManager:
                 (item.name, item.stock, item.price, item.category, item.supplier, item.item_id), fetch=False
             )
             
-        self.load_data()
+        self.load_data() # Proper restoration calls load_data to ensure all indices match
         return True
         
     def queue_order(self, item_id, quantity, order_type):
